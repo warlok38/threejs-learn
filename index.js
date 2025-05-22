@@ -40,6 +40,8 @@ scene.add(road);
 // loader
 const loader = new GLTFLoader();
 let car;
+let mixer;
+let jumpAction;
 
 loader.load(
   "models/car/scene.gltf",
@@ -47,6 +49,14 @@ loader.load(
     car = gltf.scene;
     car.scale.set(2, 2, 2);
     car.position.set(0, 0, 0);
+
+    //init animation
+    if (gltf.animations && gltf.animations.length > 0) {
+      mixer = new THREE.AnimationMixer(car);
+      jumpAction = mixer.clipAction(gltf.animations[0]);
+      jumpAction.setLoop(THREE.LoopOnce);
+      jumpAction.setDuration(1);
+    }
 
     scene.add(car);
   },
@@ -59,22 +69,45 @@ loader.load(
 );
 
 let angle = 0;
-let isMoving = false;
+let isMovingForward = false;
+let isMovingBack = false;
+let isJumping = false;
+let clock = new THREE.Clock();
+let jumpTime = 0;
+let jumpDuration = 1;
+let maxJumpHeight = 5;
 
 window.addEventListener("keydown", (event) => {
   if (event.key === "ArrowUp") {
-    isMoving = true;
+    isMovingForward = true;
+  }
+
+  if (event.key === "ArrowDown") {
+    isMovingBack = true;
+  }
+
+  if (event.code === "Space" && !isJumping && car) {
+    isJumping = true;
+    jumpHeight = 0;
+
+    if (jumpAction) {
+      jumpAction.reset().play();
+    }
   }
 });
 
 window.addEventListener("keyup", (event) => {
   if (event.key === "ArrowUp") {
-    isMoving = false;
+    isMovingForward = false;
+  }
+
+  if (event.key === "ArrowDown") {
+    isMovingBack = false;
   }
 });
 
-function moveCar() {
-  if (!car || !isMoving) {
+function moveCarForward() {
+  if (!car || !isMovingForward) {
     return;
   }
 
@@ -82,6 +115,34 @@ function moveCar() {
   car.position.x = 5 * Math.cos(angle);
   car.position.z = 5 * Math.sin(angle);
   car.rotation.y = -angle;
+}
+
+function moveCarBack() {
+  if (!car || !isMovingBack) {
+    return;
+  }
+
+  angle -= 0.01;
+  car.position.x = 5 * Math.cos(angle);
+  car.position.z = 5 * Math.sin(angle);
+  car.rotation.y = -angle;
+}
+
+function handleJump(delta) {
+  if (!isJumping || !car) return;
+
+  jumpTime += delta;
+  const progress = Math.min(jumpTime / jumpDuration, 1);
+
+  const jumpHeight = Math.sin(progress * Math.PI) * maxJumpHeight;
+  car.position.y = jumpHeight;
+
+  // end jump phase
+  if (progress >= 1) {
+    car.position.y = 0;
+    isJumping = false;
+    jumpTime = 0;
+  }
 }
 
 //points
@@ -123,7 +184,7 @@ function showInfo(message) {
 
 function checkInfoPoints() {
   infoPoints.forEach((point) => {
-    const distance = car.position.distanceTo(point.position);
+    const distance = car?.position.distanceTo(point.position);
 
     if (distance < 0.5) {
       showInfo(point.message);
@@ -134,7 +195,16 @@ function checkInfoPoints() {
 //animation function
 function animate() {
   requestAnimationFrame(animate);
-  moveCar();
+
+  const delta = clock.getDelta();
+
+  if (mixer) {
+    mixer.update(delta);
+  }
+
+  handleJump(delta);
+  moveCarForward();
+  moveCarBack();
   checkInfoPoints();
 
   renderer.setClearColor("lightblue");
