@@ -1,6 +1,9 @@
 import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
+import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer.js";
+import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass.js";
+import { UnrealBloomPass } from "three/examples/jsm/postprocessing/UnrealBloomPass.js";
 
 const scene = new THREE.Scene();
 
@@ -30,6 +33,18 @@ renderer.setSize(window.innerWidth, window.innerHeight);
 
 document.body.appendChild(renderer.domElement);
 
+// postprocess
+const renderPass = new RenderPass(scene, camera);
+
+const bloomPass = new UnrealBloomPass(
+  new THREE.Vector2(window.innerWidth, window.innerHeight, 1.5, 0.4, 0.85)
+);
+
+const composer = new EffectComposer(renderer);
+composer.addPass(renderPass);
+composer.addPass(bloomPass);
+
+//controls
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 controls.dampingFactor = 0.05;
@@ -57,8 +72,32 @@ const sphere = new THREE.Mesh(
 sphere.position.x = 2;
 // scene.add(sphere);
 
-// load models
+//shaders
+const vertexShader = `
+  varying vec3 vPosition;
+  void main() {
+    vPosition = position;
+    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+  }
+`;
 
+const fragmetShader = `
+  varying vec3 vPosition;
+  void main() {
+    gl_FragColor = vec4(abs(vPosition.x), abs(vPosition.y), abs(vPosition.z))
+  }
+`;
+
+const shaderMaterial = new THREE.ShaderMaterial({
+  vertexShader,
+  fragmetShader,
+});
+
+const newCube = new THREE.Mesh(new THREE.BoxGeometry(), shaderMaterial);
+
+scene.add(newCube);
+
+// load models
 const loader = new GLTFLoader();
 loader.load(
   "models/car/scene.gltf",
@@ -123,8 +162,8 @@ function animate() {
   }
 
   controls.update();
-  renderer.setClearColor("lightBlue");
-  renderer.render(scene, camera);
+  renderer.setClearColor("#1d1d1d");
+  composer.render();
 }
 
 animate();
