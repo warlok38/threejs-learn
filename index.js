@@ -1,6 +1,6 @@
 import * as THREE from "three";
+import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
-import { getRandomNumber } from "./utils/getRandomNumber";
 
 const scene = new THREE.Scene();
 
@@ -12,7 +12,9 @@ const camera = new THREE.PerspectiveCamera(
   100
 );
 
-camera.position.z = 5;
+camera.position.x = 15;
+camera.position.y = 10;
+camera.position.z = 50;
 
 // light
 const ambientLight = new THREE.AmbientLight("#fff", 0.5);
@@ -33,15 +35,19 @@ controls.enableDamping = true;
 controls.dampingFactor = 0.05;
 controls.screenSpacePanning = false;
 controls.minDistance = 2;
-controls.maxDistance = 10;
+controls.maxDistance = 30;
 
 //figures on scene
 const geometry = new THREE.BoxGeometry();
-const material = new THREE.MeshStandardMaterial({ color: "red" });
-const cube = new THREE.Mesh(geometry, material);
+const originMaterial = new THREE.MeshStandardMaterial({ color: "red" });
+const hightlightMaterial = new THREE.MeshStandardMaterial({
+  color: "white",
+  emissiveIntensity: 0.5,
+});
+const cube = new THREE.Mesh(geometry, originMaterial);
 cube.position.set(0, 0, 0);
 
-scene.add(cube);
+// scene.add(cube);
 
 const sphere = new THREE.Mesh(
   new THREE.SphereGeometry(),
@@ -49,38 +55,75 @@ const sphere = new THREE.Mesh(
 );
 
 sphere.position.x = 2;
-scene.add(sphere);
+// scene.add(sphere);
+
+// load models
+
+const loader = new GLTFLoader();
+loader.load(
+  "models/car/scene.gltf",
+  (gltf) => {
+    const model = gltf.scene;
+    model.scale.set(0.05, 0.05, 0.05);
+    model.position.set(0, 0, 0);
+
+    scene.add(model);
+  },
+  (xhr) => {
+    console.log((xhr.loaded / xhr.total) * 100 + "% loaded");
+  },
+  (error) => {
+    console.error("Error: " + error);
+  }
+);
+
+//GSAP
+
+// gsap.to(cube.position, {
+//   y: 2,
+//   x: 1,
+//   duration: 1,
+//   ease: "power1.inOut",
+//   repeat: -1,
+//   yoyo: true,
+// });
+
+//
 
 const raycaster = new THREE.Raycaster();
 const mouse = new THREE.Vector2();
 
-const colors = ["orange", "blue", "pink", "yellow"];
-
-function onMouseClick(event) {
+function onMouseMove(event) {
   mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
   mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-
-  raycaster.setFromCamera(mouse, camera);
-
-  const intersects = raycaster.intersectObjects(scene.children);
-  console.log(getRandomNumber(0, colors.length - 1));
-  if (intersects.length > 0) {
-    intersects[0].object.material.color.set(
-      colors[getRandomNumber(0, colors.length - 1)]
-    );
-  }
 }
 
-window.addEventListener("click", onMouseClick);
+window.addEventListener("mousemove", onMouseMove);
+
+let isHover = false;
 
 //animation function
 function animate() {
   requestAnimationFrame(animate);
 
-  cube.rotation.x += 0.01;
-  cube.rotation.y += 0.01;
+  raycaster.setFromCamera(mouse, camera);
+
+  const intersects = raycaster.intersectObject(cube);
+
+  if (intersects.length > 0 && !isHover) {
+    cube.material = hightlightMaterial;
+    isHover = true;
+
+    gsap.to(cube.scale, { x: 1.5, y: 1.5, duration: 1.5, ease: "power1.out" });
+  } else if (intersects.length === 0 && isHover) {
+    cube.material = originMaterial;
+    isHover = false;
+
+    gsap.to(cube.scale, { x: 1, y: 1, duration: 1, ease: "power1.out" });
+  }
 
   controls.update();
+  renderer.setClearColor("lightBlue");
   renderer.render(scene, camera);
 }
 
