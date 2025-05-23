@@ -1,0 +1,11 @@
+Model Information:
+* title:	Floating Island Scene
+* source:	https://sketchfab.com/3d-models/floating-island-scene-1e3c490fb4184e308b1ec0319b25a665
+* author:	jre-models (https://sketchfab.com/jre-models)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Floating Island Scene" (https://sketchfab.com/3d-models/floating-island-scene-1e3c490fb4184e308b1ec0319b25a665) by jre-models (https://sketchfab.com/jre-models) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
