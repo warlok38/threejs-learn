@@ -5,7 +5,8 @@ const infoPoints = [
   {
     id: 1,
     position: new THREE.Vector3(CAR_POSITION_X, 0, 0),
-    message: "Hello! This is my first test project on three.js",
+    message:
+      "Hello! This is my first test project on three.js\nPress buttons for action: up/down and space",
   },
   {
     id: 2,
